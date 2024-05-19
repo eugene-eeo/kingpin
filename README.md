@@ -24,3 +24,29 @@ curl -H "X-Token: ${token}" -s http://localhost:2222/sign/ -d@/tmp/host.pub > /t
 # check the host key
 ssh-keygen -L -f /tmp/host.cert | grep "$(ssh-keygen -l -f /tmp/ca.pub | awk '{print $2}')"
 ```
+
+### example cloud-init userdata configuration
+
+note the `${TOKEN}` needs to be injected into the userdata during VM creation.
+
+```yaml
+#cloud-config
+manage_etc_hosts: true
+ssh_genkeytypes: [ed25519]
+users:
+- name: core
+  sudo: ALL=(ALL) NOPASSWD:ALL
+  shell: /bin/bash
+runcmd:
+- curl http://10.10.10.1:2222/ca/ > /etc/ssh/ca.pub
+- "curl -X POST -H 'X-Token: ${TOKEN}' http://10.10.10.1:2222/sign/ -d@/etc/ssh/ssh_host_ed25519_key.pub > /etc/ssh/host.cert"
+- systemctl restart sshd
+write_files:
+- path: /etc/ssh/sshd_config.d/99-nocloud.conf
+  permissions: '0600'
+  owner: root:root
+  content: |
+    HostKey /etc/ssh/ssh_host_ed25519_key
+    HostCertificate /etc/ssh/host.cert
+    TrustedUserCAKeys /etc/ssh/ca.pub
+```
