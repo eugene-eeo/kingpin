@@ -27,12 +27,14 @@ func (kp *KeyPair) PublicKey() []byte {
 	return ssh.MarshalAuthorizedKey(sshPk)
 }
 
+// Sign signs the given public key with the CA, with details generated from
+// the request.
 func Sign(r *Request, ca *KeyPair, pk ssh.PublicKey) ([]byte, error) {
-	cert := r.sshCert(pk)
 	signer, err := ssh.NewSignerFromKey(ca.sk)
 	if err != nil {
 		return nil, err
 	}
+	cert := r.cert(pk)
 	if err := cert.SignCert(rand.Reader, signer); err != nil {
 		return nil, err
 	}

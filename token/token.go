@@ -16,13 +16,17 @@ var (
 	b64Dec   = base64.RawURLEncoding.DecodeString
 
 	InvalidToken = errors.New("invalid token")
+	TokenExpired = errors.New("token has expired")
 )
 
 type Key []byte
 
-func NewToken(data []byte, key Key) (string, error) {
-	t := time.Now().UTC().Add(5 * time.Minute).Unix()
-	tBytes := binary.LittleEndian.AppendUint64(nil, uint64(t))
+func encodeTime(t time.Time) []byte {
+	return binary.LittleEndian.AppendUint64(nil, uint64(t.Unix()))
+}
+
+func newWithExpiration(data []byte, key Key, validUntil time.Time) string {
+	tBytes := encodeTime(validUntil)
 
 	h := hmac.New(hmacAlgo, key)
 	h.Write(tBytes)
@@ -30,10 +34,14 @@ func NewToken(data []byte, key Key) (string, error) {
 
 	mac := h.Sum(nil)
 	tok := b64Enc(tBytes) + "." + b64Enc(data) + "." + b64Enc(mac)
-	return tok, nil
+	return tok
 }
 
-func Parse(s string, key Key) ([]byte, error) {
+func New(data []byte, key Key, expiration time.Duration) string {
+	return newWithExpiration(data, key, time.Now().Add(expiration))
+}
+
+func parseWithTime(s string, key Key, now time.Time) ([]byte, error) {
 	parts := strings.SplitN(s, ".", 3)
 	if len(parts) != 3 {
 		return nil, InvalidToken
@@ -45,8 +53,8 @@ func Parse(s string, key Key) ([]byte, error) {
 	}
 	validUntilUnix := binary.LittleEndian.Uint64(validUntilBytes)
 	validUntil := time.Unix(int64(validUntilUnix), 0)
-	if time.Now().After(validUntil) {
-		return nil, InvalidToken
+	if now.After(validUntil) {
+		return nil, TokenExpired
 	}
 
 	data, err := b64Dec(parts[1])
@@ -68,4 +76,8 @@ func Parse(s string, key Key) ([]byte, error) {
 	}
 
 	return data, nil
+}
+
+func Parse(s string, key Key) ([]byte, error) {
+	return parseWithTime(s, key, time.Now())
 }

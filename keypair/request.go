@@ -46,7 +46,7 @@ func (r *Request) Encode() []byte {
 	return b
 }
 
-func (r *Request) sshCert(pk ssh.PublicKey) *ssh.Certificate {
+func (r *Request) cert(pk ssh.PublicKey) *ssh.Certificate {
 	now := time.Now()
 	cert := &ssh.Certificate{
 		KeyId:           r.Principals[0],

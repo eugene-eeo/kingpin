@@ -7,13 +7,14 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"local/kingpin/keypair"
 	"local/kingpin/token"
 )
 
 const (
-	maxBodyBytes = 1024
+	maxBodyBytes = 512
 )
 
 type Server struct {
@@ -43,9 +44,13 @@ func (s *Server) generateToken(w http.ResponseWriter, r *http.Request) {
 
 	var csr keypair.Request
 	r.Body = http.MaxBytesReader(w, r.Body, maxBodyBytes)
-	dec := json.NewDecoder(r.Body)
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("invalid request: %s", err), http.StatusBadRequest)
+		return
+	}
 
-	if err := dec.Decode(&csr); err != nil {
+	if err := json.Unmarshal(data, &csr); err != nil {
 		http.Error(w, fmt.Sprintf("invalid request: %s", err), http.StatusBadRequest)
 		return
 	}
@@ -55,12 +60,7 @@ func (s *Server) generateToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tok, err := token.NewToken(csr.Encode(), s.key)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("invalid request: %s", err), http.StatusBadRequest)
-		return
-	}
-
+	tok := token.New(csr.Encode(), s.key, 5 * time.Minute)
 	w.Header().Add("Content-Type", "application/json")
 	w.Write([]byte(fmt.Sprintf(`{"token":"%s"}`, tok)))
 	w.Write([]byte("\n"))
