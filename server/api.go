@@ -18,7 +18,7 @@ const (
 
 type Server struct {
 	ca       *keypair.KeyPair
-	key      []byte
+	key      token.Key
 	caPubKey []byte
 	username string
 	password string
@@ -139,10 +139,10 @@ func (s *Server) ListenAndServe(addrs []string) {
 	<-exitChan
 }
 
-func NewServer(ca *keypair.KeyPair, key []byte, username, password string) (*Server, error) {
+func NewServer(ca *keypair.KeyPair, key token.Key, username, password string) (*Server, error) {
 	return &Server{
 		ca:       ca,
-		caPubKey: append(ca.PublicKey(), '\n'),
+		caPubKey: ca.PublicKey(),
 		key:      key,
 		username: username,
 		password: password,

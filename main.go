@@ -9,6 +9,7 @@ import (
 
 	"local/kingpin/keypair"
 	"local/kingpin/server"
+	"local/kingpin/token"
 )
 
 func GetInterfaceAddr(name string, port int) ([]string, error) {
@@ -69,7 +70,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	srv, err := server.NewServer(ca, []byte(*secret), *username, *password)
+	srv, err := server.NewServer(ca, token.Key(*secret), *username, *password)
 	if err != nil {
 		slog.Error("failed to initialize server", "err", err)
 		os.Exit(1)

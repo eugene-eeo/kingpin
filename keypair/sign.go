@@ -3,9 +3,7 @@ package keypair
 import (
 	"crypto/ed25519"
 	"crypto/rand"
-	"encoding/base64"
 	"errors"
-	"fmt"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -26,9 +24,7 @@ func (kp *KeyPair) PublicKey() []byte {
 	if err != nil {
 		panic(err)
 	}
-	return []byte(fmt.Sprintf("ssh-ed25519 %s",
-		base64.StdEncoding.EncodeToString(sshPk.Marshal()),
-	))
+	return ssh.MarshalAuthorizedKey(sshPk)
 }
 
 func Sign(r *Request, ca *KeyPair, pk ssh.PublicKey) ([]byte, error) {

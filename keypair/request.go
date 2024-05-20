@@ -26,7 +26,7 @@ type Request struct {
 	UserKey    bool     `json:"user_key"`
 	Principals []string `json:"principals"`
 
-	// From and To is the number of seconds.
+	// From and To is in number of seconds.
 	From int64 `json:"from"`
 	To   int64 `json:"to"`
 }
